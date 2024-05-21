@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api";
   import AutoFill from "./components/AutoFill.svelte";
   import { onDestroy, onMount } from "svelte";
   import storage from "./storage";
@@ -11,15 +10,8 @@
 
   let windowId: string = "";
 
-  const defaultLocalItems = ["0.0.0.0:8080", "127.0.0.1:8080"];
-  const k_exLocalItems = "udp_exLocalItems";
-  let exLocalItems: string[] = [];
-  let localItems: string[] = [];
-  let local = "";
-  let bondAt = "";
-
-  const defaultRemoteItems = ["255.255.255.255:8256", "192.168.1.255:8256"];
-  const k_exRemoteItems = "udp_exRemoteItems";
+  const defaultRemoteItems = ["ws://127.0.0.1:44444"];
+  const k_exRemoteItems = "ws_exRemoteItems";
   let exRemoteItems: string[] = [];
   let remoteItems: string[] = [];
   let remote = "";
@@ -43,61 +35,67 @@
       type: "binary",
     },
   ];
-  const defaultParserItems: IParser[] = [
+  const defaultParserItems: IParser<Buffer>[] = [
     {
       name: "string",
-      fn: (buf) => JSON.stringify(Buffer.from(buf).toString()),
+      fn: (buf) => JSON.stringify(buf.toString()),
     },
     {
       name: "binary",
-      fn: (buf) => buf.map((x) => x.toString(16).padStart(2, "0")).join(" "),
+      fn: (buf) => Array.from(buf).map((x) => x.toString(16).padStart(2, "0")).join(" "),
     },
   ];
 
-  async function bind() {
-    const ok = await invoke("udp_bind", { id: windowId, bindAt: local });
-    if (ok) IOHandler.addOutput(`UDP bond at ${local}`);
-    else IOHandler.addOutput(`UDP failed to bind at ${local}`);
-    if (!localItems.includes(local)) {
-      exLocalItems.unshift(local);
-      storage.set(k_exLocalItems, exLocalItems);
-      localItems.unshift(local);
-      localItems = localItems;
-    }
-    exLocalItems = exLocalItems;
-    local = local;
-    bondAt = local;
+  let io: WebSocket | undefined = undefined;
+  async function connect() {
+    const s = new WebSocket(remote);
+    s.addEventListener("open", () => {
+      io = s;
+      IOHandler.addOutput(`Websocket connected to ${remote}`);
+    });
+    s.addEventListener("close", () => {
+      io = undefined;
+      IOHandler.addOutput(`Websocket disconnected`);
+    });
+    s.addEventListener("message", async (e) => {
+      const buf = Buffer.from(e.data instanceof Blob ? await e.data.arrayBuffer() : e.data);
+      const data = parser.fn(buf);
+      IOHandler.addOutput(`← [${remote}] ${data}`);
+    });
   }
-  async function unbind() {
-    const ok = await invoke("udp_unbind", { id: windowId });
-    if (ok) {
-      IOHandler.addOutput(`UDP unbond from ${local}`);
-      bondAt = "";
-    } else IOHandler.addOutput(`UDP failed to unbind from ${local}`);
+  async function disconnect() {
+    io!.close();
+    io = undefined;
+  }
+
+  async function _send(message: any) {
+    io!.send(message);
+    return true;
   }
 
   async function send() {
-    const message =
-      func.type === "binary"
-        ? Array.from(
-            Buffer.from(
-              input
-                .split(/\s+/)
-                .map((x) => (x.length % 2 ? "0" + x : x))
-                .join(""),
-              "hex",
-            ),
-          )
-        : Array.from(Buffer.from(input));
-    const ok = await invoke("udp_send", {
-      id: windowId,
-      target: remote,
-      message,
-    });
-    const data =
-      func.type === "binary"
-        ? message.map((x) => x.toString(16).padStart(2, "0")).join(" ")
-        : input;
+    if (!input) return;
+    let message: any;
+    let data: any;
+    switch (func.type) {
+      case "binary":
+        message = Buffer.from(
+          input
+            .split(/\s+/)
+            .map((x) => (x.length % 2 ? "0" + x : x))
+            .join(""),
+          "hex",
+        );
+        data = Array.from(message as Buffer)
+          .map((x) => x.toString(16).padStart(2, "0"))
+          .join(" ");
+        break;
+      case "string":
+        message = input;
+        data = input;
+        break;
+    }
+    const ok = await _send(message);
     if (ok) IOHandler.addOutput(`→ [${remote}] ${data} → OK`);
     else IOHandler.addOutput(`→ [${remote}] ${data} → FAIL`);
     if (!remoteItems.includes(remote)) {
@@ -109,19 +107,7 @@
     exRemoteItems = exRemoteItems;
     remote = remote;
   }
-  function clearLocalItem() {
-    local = "";
-  }
-  function deleteLocalItem() {
-    exLocalItems = storage.get(k_exLocalItems) || [];
-    const i = exLocalItems.indexOf(local);
-    if (~i) {
-      exLocalItems.splice(i, 1);
-      storage.set(k_exLocalItems, exLocalItems);
-    }
-    localItems = [...exLocalItems, ...defaultLocalItems];
-    local = "";
-  }
+
   function clearRemoteItem() {
     remote = "";
   }
@@ -139,9 +125,6 @@
   let unlisten = () => {};
   onMount(async () => {
     windowId = getCurrent().label;
-    exLocalItems = storage.get(k_exLocalItems) || [];
-    localItems = [...exLocalItems, ...defaultLocalItems];
-    local = defaultLocalItems[0];
     exRemoteItems = storage.get(k_exRemoteItems) || [];
     remoteItems = [...exRemoteItems, ...defaultRemoteItems];
     remote = defaultRemoteItems[0];
@@ -165,34 +148,22 @@
 <main>
   <div style="display: flex; margin-top: 12px; align-items: center;">
     <!-- svelte-ignore a11y-label-has-associated-control -->
-    <label>Local</label>
+    <label>Remote</label>
     <AutoFill
-      placeholder="e.g. 127.0.0.1:8080"
-      bind:value={local}
-      items={localItems}
-      disabled={!!bondAt}
-    />
-    {#if bondAt}
-      <button class="btn error" on:click={unbind}>Unbind</button>
-    {:else}
-      <button class="btn primary" on:click={bind}>Bind</button>
-      <button class="btn primary" on:click={clearLocalItem}>Clear</button>
-      {#if exLocalItems.includes(local)}
-        <button class="btn error" on:click={deleteLocalItem}>Delete</button>
-      {/if}
-    {/if}
-    <!-- svelte-ignore a11y-label-has-associated-control -->
-    <label style="margin-left: 16px">Remote</label>
-    <AutoFill
-      placeholder="e.g. 192.168.1.102:8256"
+      placeholder="e.g. ws://192.168.1.102:44444"
       bind:value={remote}
       items={remoteItems}
     />
-    <button class="btn primary" on:click={send} disabled={!bondAt}>Send</button>
+    {#if io}
+      <button class="btn error" on:click={disconnect}>Disconnect</button>
+    {:else}
+      <button class="btn primary" on:click={connect}>Connect</button>
+    {/if}
     <button class="btn primary" on:click={clearRemoteItem}>Clear</button>
-    {#if exLocalItems.includes(local)}
+    {#if exRemoteItems.includes(remote)}
       <button class="btn error" on:click={deleteRemoteItem}>Delete</button>
     {/if}
+    <button class="btn primary" on:click={send} disabled={!io}>Send</button>
   </div>
 
   <hr />

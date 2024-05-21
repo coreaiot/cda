@@ -6,6 +6,7 @@
   import Udp from "./lib/UDP.svelte";
   import { Buffer } from "buffer";
   import SocketIo from "./lib/SocketIO.svelte";
+  import Websocket from "./lib/Websocket.svelte";
 
   (window as any).Buffer = Buffer;
 
@@ -54,5 +55,7 @@
     <Udp />
   {:else if hash === "#SocketIO"}
     <SocketIo />
+  {:else if hash === "#Websocket"}
+    <Websocket />
   {/if}
 </main>

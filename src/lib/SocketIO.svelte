@@ -179,7 +179,7 @@
     <!-- svelte-ignore a11y-label-has-associated-control -->
     <label>Remote</label>
     <AutoFill
-      placeholder="e.g. 192.168.1.102:44444"
+      placeholder="e.g. http://192.168.1.102:44444"
       bind:value={remote}
       items={remoteItems}
     />
