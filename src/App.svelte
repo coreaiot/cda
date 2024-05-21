@@ -5,6 +5,7 @@
   import { listen } from "@tauri-apps/api/event";
   import Udp from "./lib/UDP.svelte";
   import { Buffer } from "buffer";
+  import SocketIo from "./lib/SocketIO.svelte";
 
   (window as any).Buffer = Buffer;
 
@@ -30,7 +31,7 @@
 
   let unsubscribe = () => {};
   onMount(async () => {
-    hash = window.location.hash || "#udp";
+    hash = window.location.hash || "#UDP";
     appWindow.setTitle("Coreaiot Debug Assistant " + hash);
     await initDarkmode();
 
@@ -49,7 +50,9 @@
 </script>
 
 <main class="container">
-  {#if hash === "#udp"}
+  {#if hash === "#UDP"}
     <Udp />
+  {:else if hash === "#SocketIO"}
+    <SocketIo />
   {/if}
 </main>

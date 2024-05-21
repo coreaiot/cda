@@ -14,14 +14,16 @@
     "@kuyoonjo/tauri-plugin-theme-api": "^0.2.0",
     "@tauri-apps/api": "^1",
     "buffer": "^6.0.3",
-    "moment": "^2.30.1"
+    "moment": "^2.30.1",
+    "socket.io-client": "^4.7.5"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^3.0.1",
-		"@tauri-apps/api": "^1.5.3",
-		"@tauri-apps/cli": "^1.5.11",
+    "@tauri-apps/api": "^1.5.3",
+    "@tauri-apps/cli": "^1.5.11",
     "@tsconfig/svelte": "^5.0.2",
     "sass": "^1.77.0",
+    "socket.io": "^4.7.5",
     "svelte": "^4.2.8",
     "svelte-check": "^3.4.6",
     "tslib": "^2.6.0",

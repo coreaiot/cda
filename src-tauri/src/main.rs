@@ -7,6 +7,7 @@ use tauri::{AboutMetadata, CustomMenuItem, Manager, Menu, MenuItem, Submenu};
 use tauri_plugin_theme_v1::{get_theme, set_theme, Theme, ThemePlugin};
 
 mod udp;
+// mod socketio;
 
 #[tauri::command]
 fn open_save_dialog(dir: &str, default_file_name: &str) -> Result<String, ()> {
@@ -77,9 +78,13 @@ fn main() {
     let mut new_websocket_window =
         CustomMenuItem::new("new_websocket_window".to_string(), "New Websocket Window");
     new_websocket_window.keyboard_accelerator = Some("CmdOrCtrl+Shift+W".to_string());
+    let mut new_socketio_window =
+        CustomMenuItem::new("new_socketio_window".to_string(), "New SocketIO Window");
+        new_socketio_window.keyboard_accelerator = Some("CmdOrCtrl+Shift+S".to_string());
     file_menu = file_menu
         .add_item(new_udp_window)
-        .add_item(new_websocket_window);
+        .add_item(new_websocket_window)
+        .add_item(new_socketio_window);
     #[cfg(target_os = "macos")]
     {
         file_menu = file_menu.add_native_item(MenuItem::Separator);
@@ -142,7 +147,7 @@ fn main() {
                 tauri::WindowBuilder::new(
                     event.window().app_handle().borrow(),
                     &label,
-                    tauri::WindowUrl::App("index.html#udp".into()),
+                    tauri::WindowUrl::App("index.html#UDP".into()),
                 )
                 .build()
                 .unwrap();
@@ -152,7 +157,17 @@ fn main() {
                 tauri::WindowBuilder::new(
                     event.window().app_handle().borrow(),
                     &label,
-                    tauri::WindowUrl::App("index.html#websocket".into()),
+                    tauri::WindowUrl::App("index.html#Websocket".into()),
+                )
+                .build()
+                .unwrap();
+            }
+            "new_socketio_window" => {
+                let label: String = "sio-".to_string() + &uuid::Uuid::new_v4().to_string();
+                tauri::WindowBuilder::new(
+                    event.window().app_handle().borrow(),
+                    &label,
+                    tauri::WindowUrl::App("index.html#SocketIO".into()),
                 )
                 .build()
                 .unwrap();

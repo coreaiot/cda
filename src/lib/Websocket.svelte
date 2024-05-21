@@ -43,7 +43,7 @@
       type: "binary",
     },
   ];
-  const defaultParserItems: IParser<number[]>[] = [
+  const defaultParserItems: IParser[] = [
     {
       name: "string",
       fn: (buf) => JSON.stringify(Buffer.from(buf).toString()),
@@ -76,14 +76,6 @@
     } else IOHandler.addOutput(`UDP failed to unbind from ${local}`);
   }
 
-  function _send(message: any) {
-    return invoke("udp_send", {
-      id: windowId,
-      target: remote,
-      message,
-    });
-  }
-
   async function send() {
     const message =
       func.type === "binary"
@@ -97,7 +89,11 @@
             ),
           )
         : Array.from(Buffer.from(input));
-    const ok = await _send(message);
+    const ok = await invoke("udp_send", {
+      id: windowId,
+      target: remote,
+      message,
+    });
     const data =
       func.type === "binary"
         ? message.map((x) => x.toString(16).padStart(2, "0")).join(" ")
@@ -194,7 +190,7 @@
     />
     <button class="btn primary" on:click={send} disabled={!bondAt}>Send</button>
     <button class="btn primary" on:click={clearRemoteItem}>Clear</button>
-    {#if exRemoteItems.includes(remote)}
+    {#if exLocalItems.includes(local)}
       <button class="btn error" on:click={deleteRemoteItem}>Delete</button>
     {/if}
   </div>
@@ -202,7 +198,7 @@
   <hr />
 
   <IOSection
-    id="udp"
+    id="websocket"
     bind:input
     bind:output
     bind:func
