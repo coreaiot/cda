@@ -62,6 +62,14 @@
       const data = parser.fn(buf);
       IOHandler.addOutput(`← [${remote}] ${data}`);
     });
+    if (!remoteItems.includes(remote)) {
+      exRemoteItems.unshift(remote);
+      storage.set(k_exRemoteItems, exRemoteItems);
+      remoteItems.unshift(remote);
+      remoteItems = remoteItems;
+    }
+    exRemoteItems = exRemoteItems;
+    remote = remote;
   }
   async function disconnect() {
     io!.close();
@@ -98,14 +106,6 @@
     const ok = await _send(message);
     if (ok) IOHandler.addOutput(`→ [${remote}] ${data} → OK`);
     else IOHandler.addOutput(`→ [${remote}] ${data} → FAIL`);
-    if (!remoteItems.includes(remote)) {
-      exRemoteItems.unshift(remote);
-      storage.set(k_exRemoteItems, exRemoteItems);
-      remoteItems.unshift(remote);
-      remoteItems = remoteItems;
-    }
-    exRemoteItems = exRemoteItems;
-    remote = remote;
   }
 
   function clearRemoteItem() {

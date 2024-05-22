@@ -70,6 +70,14 @@
       io = undefined;
       IOHandler.addOutput(`SocketIO disconnected`);
     });
+    if (!remoteItems.includes(remote)) {
+      exRemoteItems.unshift(remote);
+      storage.set(k_exRemoteItems, exRemoteItems);
+      remoteItems.unshift(remote);
+      remoteItems = remoteItems;
+    }
+    exRemoteItems = exRemoteItems;
+    remote = remote;
   }
   async function disconnect() {
     io!.close();
@@ -127,14 +135,6 @@
     const ok = await _send(message);
     if (ok) IOHandler.addOutput(`→ [${topic}] ${data} → OK`);
     else IOHandler.addOutput(`→ [${topic}] ${data} → FAIL`);
-    if (!remoteItems.includes(remote)) {
-      exRemoteItems.unshift(remote);
-      storage.set(k_exRemoteItems, exRemoteItems);
-      remoteItems.unshift(remote);
-      remoteItems = remoteItems;
-    }
-    exRemoteItems = exRemoteItems;
-    remote = remote;
   }
 
   function clearRemoteItem() {
@@ -204,7 +204,7 @@
   <hr />
 
   <IOSection
-    id="websocket"
+    id="socketio"
     bind:input
     bind:output
     bind:func
